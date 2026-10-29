@@ -9,7 +9,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;background:#0f172a;color:#fff;font-family:-apple-system,sans-serif;overflow:hidden}
-body{display:flex;flex-direction:row;align-items:center;justify-content:center;position:relative}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
 
 #progressRing{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
 #progressRing div{position:absolute;background:#22c55e;transition:width .2s,height .2s}
@@ -19,27 +19,25 @@ body{display:flex;flex-direction:row;align-items:center;justify-content:center;p
 #pLeft{bottom:0;left:0;width:6px;height:0%}
 
 #main{position:relative;z-index:5;text-align:center}
-#count{font-size:140px;font-weight:800;line-height:1;letter-spacing:-4px}
-#target{font-size:40px;opacity:.6;margin-top:6px;border-top:2px solid rgba(255,255,255,.3);padding-top:6px;display:inline-block;min-width:100px}
+#count{font-size:130px;font-weight:800;line-height:1;letter-spacing:-4px}
+#target{font-size:36px;opacity:.6;margin-top:6px;border-top:2px solid rgba(255,255,255,.3);padding-top:6px;display:inline-block;min-width:90px}
 
-#arrows{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:48px;z-index:10}
-.arrow{font-size:80px;line-height:1;transition:color .2s,filter .2s}
+#arrows{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:40px;z-index:10}
+.arrow{font-size:72px;line-height:1;transition:color .2s,filter .2s}
 #arrowUp{color:#ef4444}
 #arrowDown{color:#ef4444}
-#arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 14px #4ade80)}
-#arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 14px #4ade80)}
-.arrow-label{font-size:15px;opacity:.9;margin-top:2px;letter-spacing:1px}
+#arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
+#arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
+.arrow-label{font-size:14px;opacity:.9;margin-top:2px;letter-spacing:1px}
 
-#bottom{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:10}
-#switchBtn{padding:16px 48px;font-size:22px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:14px}
+#controls{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:10;width:100%;max-width:360px}
+#startRow{display:flex;gap:16px;justify-content:center}
+.startBtn{padding:14px 28px;font-size:16px;background:#16a34a;color:#fff;border:none;border-radius:10px}
+#switchBtn{padding:16px 48px;font-size:22px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:14px;display:none}
 #resetBtn{padding:10px 28px;font-size:15px;background:#dc2626;color:#fff;border:none;border-radius:10px;display:none}
 
 #refreshBtn{position:absolute;top:10px;left:10px;padding:7px 12px;font-size:12px;background:#374151;color:#fff;border:none;border-radius:8px;z-index:20}
 #status{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:14px;background:rgba(0,0,0,.5);padding:5px 10px;border-radius:8px;z-index:10}
-
-#startUp,#startDown{position:absolute;top:50%;transform:translateY(-50%);padding:14px 24px;font-size:16px;background:#16a34a;color:#fff;border:none;border-radius:10px;z-index:10}
-#startUp{left:16px}
-#startDown{right:16px}
 
 #flash{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .15s;z-index:8}
 #flash.on{background:rgba(74,222,128,.3);opacity:1}
@@ -79,11 +77,12 @@ body{display:flex;flex-direction:row;align-items:center;justify-content:center;p
   </div>
 </div>
 
-<button id="startUp">TOP Start</button>
-<button id="startDown">BOTTOM Start</button>
-
-<div id="bottom">
-  <button id="switchBtn" style="display:none">Switch</button>
+<div id="controls">
+  <div id="startRow">
+    <button class="startBtn" id="startUp">TOP Start</button>
+    <button class="startBtn" id="startDown">BOTTOM Start</button>
+  </div>
+  <button id="switchBtn">Switch</button>
   <button id="resetBtn">Reset</button>
 </div>
 
@@ -99,6 +98,7 @@ const statusEl = document.getElementById("status");
 const flash = document.getElementById("flash");
 const startUpBtn = document.getElementById("startUp");
 const startDownBtn = document.getElementById("startDown");
+const startRow = document.getElementById("startRow");
 const switchBtn = document.getElementById("switchBtn");
 const resetBtn = document.getElementById("resetBtn");
 const refreshBtn = document.getElementById("refreshBtn");
@@ -187,13 +187,11 @@ function addCount() {
 
 function updateUI() {
   if (!started) {
-    startUpBtn.style.display = "block";
-    startDownBtn.style.display = "block";
+    startRow.style.display = "flex";
     switchBtn.style.display = "none";
     resetBtn.style.display = "none";
   } else {
-    startUpBtn.style.display = "none";
-    startDownBtn.style.display = "none";
+    startRow.style.display = "none";
     switchBtn.style.display = "block";
     resetBtn.style.display = "block";
   }
@@ -256,7 +254,6 @@ resetBtn.onclick = () => {
   updateUI();
 };
 
-// 强制刷新：清缓存 + 注销 Service Worker + 带时间戳重新加载
 refreshBtn.onclick = async () => {
   statusEl.textContent = "Refreshing...";
   try {
