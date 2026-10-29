@@ -153,32 +153,22 @@ startBtn.onclick = () => {
 pauseLeftBtn.onclick = () => {
   if (!started) {
     startWithSide("left");
-  } else {
-    // 点继续（当前是暂停）时，另一方自动暂停
-    if (pauseLeft) {
-      pauseLeft = false;
-      pauseRight = true;
-    } else {
-      // 点暂停时，另一方自动继续
-      pauseLeft = true;
-      pauseRight = false;
-    }
-    updatePauseUI();
+    return;
   }
+  // 强制互斥：点左边就让左边继续，右边暂停
+  pauseLeft = false;
+  pauseRight = true;
+  updatePauseUI();
 };
 pauseRightBtn.onclick = () => {
   if (!started) {
     startWithSide("right");
-  } else {
-    if (pauseRight) {
-      pauseRight = false;
-      pauseLeft = true;
-    } else {
-      pauseRight = true;
-      pauseLeft = false;
-    }
-    updatePauseUI();
+    return;
   }
+  // 强制互斥：点右边就让右边继续，左边暂停
+  pauseRight = false;
+  pauseLeft = true;
+  updatePauseUI();
 };
 
 updatePauseUI();
