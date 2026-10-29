@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>WallBall Counter</title>
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#0a0a0a">
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
@@ -35,7 +33,6 @@
   <video id="video" autoplay playsinline muted></video>
   <canvas id="overlay"></canvas>
   <div id="flash"></div>
-
   <div id="ui">
     <div id="info">正在连接摄像头...</div>
     <div id="score">
@@ -48,12 +45,7 @@
       <button id="btnReset">重置</button>
     </div>
   </div>
-
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
-    }
-
     const ESP_IP = "192.168.4.1";
     const video = document.getElementById("video");
     const overlay = document.getElementById("overlay");
@@ -64,17 +56,15 @@
     const stateEl = document.getElementById("state");
     const flash = document.getElementById("flash");
     const btnPause = document.getElementById("btnPause");
-
     let detector = null;
     let running = true;
     let startTime = Date.now();
     let validCount = 0;
     let lastSeenHit = 0;
-
-    let phase = "idle";
+    // 状态机
+    let phase = "idle"; // idle | squatted | stoodup
     let stoodUpTime = 0;
-    const STOODUP_WINDOW = 3000;
-
+    const STOODUP_WINDOW = 3000; // 站起后 3 秒窗口
     async function setupCamera() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 640, height: 480 },
@@ -88,7 +78,6 @@
         r();
       });
     }
-
     async function loadModel() {
       await tf.setBackend("webgl");
       await tf.ready();
@@ -98,24 +87,20 @@
       );
       info.textContent = "模型已加载，连接 ESP 中...";
     }
-
     function calcAngle(a, b, c) {
       if (!a || !b || !c) return 180;
       const rad = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
       let ang = Math.abs(rad * 180 / Math.PI);
       return ang > 180 ? 360 - ang : ang;
     }
-
     function isDeepSquat(kp) {
       const lh = kp[11], rh = kp[12], lk = kp[13], rk = kp[14];
       const la = kp[15], ra = kp[16];
       if (!lh || !rh || !lk || !rk) return false;
       if (lh.score < 0.35 || rh.score < 0.35) return false;
-
       const hipY = (lh.y + rh.y) / 2;
       const kneeY = (lk.y + rk.y) / 2;
       const depthOK = hipY > kneeY + 15;
-
       let angleOK = false;
       if (la && ra) {
         const a1 = calcAngle(lh, lk, la);
@@ -124,7 +109,6 @@
       }
       return depthOK || angleOK;
     }
-
     function isStanding(kp) {
       const lh = kp[11], rh = kp[12], lk = kp[13], rk = kp[14];
       if (!lh || !rh || !lk || !rk) return false;
@@ -132,11 +116,9 @@
       const kneeY = (lk.y + rk.y) / 2;
       return hipY < kneeY - 30;
     }
-
     function updatePhase(kp) {
       const deep = isDeepSquat(kp);
       const stand = isStanding(kp);
-
       if (phase === "idle" && deep) {
         phase = "squatted";
       } else if (phase === "squatted" && stand) {
@@ -145,7 +127,7 @@
       } else if (phase === "stoodup" && (Date.now() - stoodUpTime > STOODUP_WINDOW)) {
         phase = "idle";
       }
-
+      // UI
       if (phase === "idle") {
         stateEl.textContent = "等待深蹲";
         stateEl.className = "wait";
@@ -157,13 +139,17 @@
         stateEl.className = "ok";
       }
     }
-
     async function pollESP() {
       try {
-        const res = await fetch(`http://${ESP_IP}/status`);
+        const res = await fetch(`http://${ESP_IP}/status`, {
+          cache: "no-store"
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         const data = await res.json();
+        info.textContent = "ESP32 已连接";
         const latest = Math.max(data.lastLeft || 0, data.lastRight || 0);
-
         if (latest > lastSeenHit) {
           lastSeenHit = latest;
           if (phase === "stoodup") {
@@ -178,10 +164,10 @@
           }
         }
       } catch (e) {
-        info.textContent = "无法连接 ESP";
+        console.error("ESP32 连接失败:", e);
+        info.textContent = "无法连接 ESP32，请检查热点及本地网络权限";
       }
     }
-
     function updateTimer() {
       if (!running) return;
       const s = Math.floor((Date.now() - startTime) / 1000);
@@ -189,24 +175,21 @@
       const sec = String(s % 60).padStart(2, "0");
       timeEl.textContent = `${m}:${sec}`;
     }
-
     async function detectLoop() {
       if (!detector || !running) {
         requestAnimationFrame(detectLoop);
         return;
       }
       const poses = await detector.estimatePoses(video, { flipHorizontal: false });
-
       ctx.clearRect(0, 0, overlay.width, overlay.height);
       ctx.save();
       ctx.scale(-1, 1);
       ctx.drawImage(video, -overlay.width, 0, overlay.width, overlay.height);
       ctx.restore();
-
       if (poses.length > 0) {
         const kp = poses[0].keypoints;
         updatePhase(kp);
-
+        // 画下半身关键点
         [11,12,13,14,15,16].forEach(i => {
           const p = kp[i];
           if (p && p.score > 0.3) {
@@ -217,17 +200,14 @@
           }
         });
       }
-
       requestAnimationFrame(detectLoop);
     }
-
     btnPause.onclick = () => {
       running = !running;
       btnPause.textContent = running ? "暂停" : "继续";
       btnPause.classList.toggle("active", !running);
       if (running) startTime = Date.now() - (Date.now() - startTime);
     };
-
     document.getElementById("btnReset").onclick = () => {
       validCount = 0;
       countEl.textContent = "0";
@@ -235,7 +215,6 @@
       startTime = Date.now();
       lastSeenHit = 0;
     };
-
     async function main() {
       await setupCamera();
       await loadModel();
@@ -243,7 +222,6 @@
       setInterval(updateTimer, 200);
       detectLoop();
     }
-
     main();
   </script>
 </body>
