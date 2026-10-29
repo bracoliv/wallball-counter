@@ -22,13 +22,13 @@ body{display:flex;flex-direction:row;align-items:center;justify-content:center;p
 #count{font-size:140px;font-weight:800;line-height:1;letter-spacing:-4px}
 #target{font-size:40px;opacity:.6;margin-top:6px;border-top:2px solid rgba(255,255,255,.3);padding-top:6px;display:inline-block;min-width:100px}
 
-#arrows{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:28px;z-index:10}
-.arrow{font-size:56px;line-height:1;transition:color .2s,filter .2s}
+#arrows{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:36px;z-index:10}
+.arrow{font-size:80px;line-height:1;transition:color .2s,filter .2s}
 #arrowUp{color:#ef4444}
 #arrowDown{color:#ef4444}
-#arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 10px #4ade80)}
-#arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 10px #4ade80)}
-.arrow-label{font-size:13px;opacity:.85;margin-top:2px}
+#arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 14px #4ade80)}
+#arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 14px #4ade80)}
+.arrow-label{font-size:16px;opacity:.85;margin-top:4px}
 
 #bottom{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:10}
 #switchBtn{padding:16px 48px;font-size:22px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:14px}
@@ -111,7 +111,7 @@ let running = false;
 let startTime = 0;
 let total = 0;
 let lastSeenLeft = 0, lastSeenRight = 0;
-let activeSide = "up"; // up = 男 (GPIO35), down = 女 (GPIO34)
+let activeSide = "up";
 let done = false;
 
 function updateArrows() {
@@ -207,9 +207,6 @@ async function pollESP() {
     const data = await res.json();
     statusEl.textContent = "已连接 ESP";
 
-    // 交换时只激活对应感应器
-    // 男 = up = GPIO35 (right)
-    // 女 = down = GPIO34 (left)
     if (activeSide === "up" && (data.lastRight||0) > lastSeenRight) {
       lastSeenRight = data.lastRight;
       addCount();
