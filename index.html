@@ -72,6 +72,15 @@ let validLeft = 0, validRight = 0;
 let lastSeenLeft = 0, lastSeenRight = 0;
 let pauseLeft = false, pauseRight = false;
 
+function updatePauseUI() {
+  leftPanel.classList.toggle("paused", pauseLeft);
+  rightPanel.classList.toggle("paused", pauseRight);
+  pauseLeftBtn.textContent = pauseLeft ? "继续" : "暂停";
+  pauseRightBtn.textContent = pauseRight ? "继续" : "暂停";
+  pauseLeftBtn.classList.toggle("paused", pauseLeft);
+  pauseRightBtn.classList.toggle("paused", pauseRight);
+}
+
 async function pollESP() {
   if (!started) return;
   try {
@@ -119,11 +128,7 @@ startBtn.onclick = () => {
     timeEl.textContent = "00:00";
     lastSeenLeft = lastSeenRight = 0;
     pauseLeft = pauseRight = false;
-    leftPanel.classList.remove("paused");
-    rightPanel.classList.remove("paused");
-    pauseLeftBtn.textContent = pauseRightBtn.textContent = "暂停";
-    pauseLeftBtn.classList.remove("paused");
-    pauseRightBtn.classList.remove("paused");
+    updatePauseUI();
     startBtn.textContent = "开始";
     statusEl.textContent = "已重置";
   }
@@ -131,15 +136,13 @@ startBtn.onclick = () => {
 
 pauseLeftBtn.onclick = () => {
   pauseLeft = !pauseLeft;
-  leftPanel.classList.toggle("paused", pauseLeft);
-  pauseLeftBtn.textContent = pauseLeft ? "继续" : "暂停";
-  pauseLeftBtn.classList.toggle("paused", pauseLeft);
+  if (pauseLeft) pauseRight = false;   // 一方暂停，另一方自动继续
+  updatePauseUI();
 };
 pauseRightBtn.onclick = () => {
   pauseRight = !pauseRight;
-  rightPanel.classList.toggle("paused", pauseRight);
-  pauseRightBtn.textContent = pauseRight ? "继续" : "暂停";
-  pauseRightBtn.classList.toggle("paused", pauseRight);
+  if (pauseRight) pauseLeft = false;   // 一方暂停，另一方自动继续
+  updatePauseUI();
 };
 
 setInterval(pollESP, 150);
