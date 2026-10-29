@@ -21,12 +21,14 @@ body{display:flex;flex-direction:row}
 .num{font-size:140px;font-weight:800;line-height:1}
 .startBtn{margin-top:20px;padding:16px 40px;font-size:20px;background:#16a34a;color:#fff;border:none;border-radius:12px}
 
-#center{position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;z-index:10}
-#time{font-size:36px;background:rgba(0,0,0,.7);padding:8px 20px;border-radius:12px;margin-top:12px}
-#switchBtn{margin-top:12px;padding:14px 36px;font-size:20px;background:#2563eb;color:#fff;border:none;border-radius:12px;display:none}
-#resetBtn{margin-top:8px;padding:12px 28px;font-size:18px;background:#dc2626;color:#fff;border:none;border-radius:12px;display:none}
-#refreshBtn{margin-top:8px;padding:10px 20px;font-size:14px;background:#374151;color:#fff;border:none;border-radius:10px}
-#status{margin-top:8px;font-size:16px;background:rgba(0,0,0,.6);padding:6px 14px;border-radius:8px}
+#time{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:52px;font-weight:700;background:rgba(0,0,0,.7);padding:10px 28px;border-radius:14px;z-index:10}
+#status{position:absolute;top:80px;left:50%;transform:translateX(-50%);font-size:16px;background:rgba(0,0,0,.6);padding:6px 14px;border-radius:8px;z-index:10}
+
+#refreshBtn{position:absolute;top:12px;left:12px;padding:10px 16px;font-size:14px;background:#374151;color:#fff;border:none;border-radius:10px;z-index:20}
+
+#bottom{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:12px;z-index:10}
+#switchBtn{padding:22px 64px;font-size:28px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:16px;display:none}
+#resetBtn{padding:14px 40px;font-size:18px;background:#dc2626;color:#fff;border:none;border-radius:12px;display:none}
 
 #flash{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .15s;z-index:5}
 #flash.green{background:rgba(74,222,128,.25);opacity:1}
@@ -34,6 +36,8 @@ body{display:flex;flex-direction:row}
 </style>
 </head>
 <body>
+<button id="refreshBtn">强制刷新</button>
+
 <div id="left">
   <div class="label">女 (34)</div>
   <div class="num" id="countLeft">0</div>
@@ -46,13 +50,14 @@ body{display:flex;flex-direction:row}
   <button class="startBtn" id="startRight">开始</button>
 </div>
 
-<div id="center">
-  <div id="time">00:00</div>
+<div id="time">00:00</div>
+<div id="status">等待开始</div>
+
+<div id="bottom">
   <button id="switchBtn">交换</button>
   <button id="resetBtn">重置</button>
-  <button id="refreshBtn">强制刷新</button>
-  <div id="status">等待开始</div>
 </div>
+
 <div id="flash"></div>
 
 <script>
@@ -148,7 +153,6 @@ startRightBtn.onclick = () => startWithSide("right");
 
 switchBtn.onclick = () => {
   if (!started) return;
-  // 交换：当前继续的那一方暂停，另一方继续
   if (pauseLeft) {
     pauseLeft = false;
     pauseRight = true;
@@ -171,12 +175,13 @@ resetBtn.onclick = () => {
   statusEl.textContent = "已重置";
 };
 
-refreshBtn.onclick = () => {
+// 强制刷新：清除所有缓存后重新加载（确保拿到最新版本）
+refreshBtn.onclick = async () => {
   if ('caches' in window) {
-    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => location.reload(true));
-  } else {
-    location.reload(true);
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
   }
+  location.reload(true);
 };
 
 updateUI();
