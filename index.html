@@ -8,63 +8,88 @@
 <meta name="theme-color" content="#0a0a0a">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;background:#111;color:#fff;font-family:-apple-system,sans-serif;overflow:hidden}
-body{display:flex;flex-direction:row}
+html,body{width:100%;height:100%;background:#0f172a;color:#fff;font-family:-apple-system,sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
 
-#left,#right{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background .3s}
-#left{background:#14532d}
-#right{background:#14532d}
-#left.paused{background:#7f1d1d}
-#right.paused{background:#7f1d1d}
+#progressRing{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+#progressRing div{position:absolute;background:#22c55e;transition:width .2s,height .2s}
+#pTop{top:0;left:0;height:6px;width:0%}
+#pRight{top:0;right:0;width:6px;height:0%}
+#pBottom{bottom:0;right:0;height:6px;width:0%}
+#pLeft{bottom:0;left:0;width:6px;height:0%}
 
-.label{font-size:28px;opacity:.9;margin-bottom:8px}
-.num{font-size:140px;font-weight:800;line-height:1}
-.startBtn{margin-top:20px;padding:16px 40px;font-size:20px;background:#16a34a;color:#fff;border:none;border-radius:12px}
+#main{position:relative;z-index:5;text-align:center}
+#count{font-size:160px;font-weight:800;line-height:1;letter-spacing:-4px}
+#target{font-size:48px;opacity:.6;margin-top:8px;border-top:2px solid rgba(255,255,255,.3);padding-top:8px;display:inline-block;min-width:120px}
 
-#time{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:52px;font-weight:700;background:rgba(0,0,0,.7);padding:10px 28px;border-radius:14px;z-index:10}
-#status{position:absolute;top:80px;left:50%;transform:translateX(-50%);font-size:16px;background:rgba(0,0,0,.6);padding:6px 14px;border-radius:8px;z-index:10}
+#arrows{position:absolute;right:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:40px;z-index:10}
+.arrow{font-size:72px;line-height:1;transition:color .2s,filter .2s}
+#arrowUp{color:#4b5563}
+#arrowDown{color:#4b5563}
+#arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
+#arrowDown.active{color:#f97316;filter:drop-shadow(0 0 12px #f97316)}
+#arrowUp.paused{color:#ef4444}
+#arrowDown.paused{color:#ef4444}
 
-#refreshBtn{position:absolute;top:12px;left:12px;padding:10px 16px;font-size:14px;background:#374151;color:#fff;border:none;border-radius:10px;z-index:20}
+#bottom{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:10}
+#switchBtn{padding:20px 56px;font-size:26px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:16px}
+#resetBtn{padding:12px 32px;font-size:16px;background:#dc2626;color:#fff;border:none;border-radius:12px;display:none}
 
-#bottom{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:12px;z-index:10}
-#switchBtn{padding:22px 64px;font-size:28px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:16px;display:none}
-#resetBtn{padding:14px 40px;font-size:18px;background:#dc2626;color:#fff;border:none;border-radius:12px;display:none}
+#refreshBtn{position:absolute;top:12px;left:12px;padding:8px 14px;font-size:13px;background:#374151;color:#fff;border:none;border-radius:8px;z-index:20}
+#status{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:15px;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:8px;z-index:10}
 
-#flash{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .15s;z-index:5}
-#flash.green{background:rgba(74,222,128,.25);opacity:1}
-#flash.red{background:rgba(248,113,113,.25);opacity:1}
+#startLeft,#startRight{position:absolute;bottom:100px;padding:14px 28px;font-size:18px;background:#16a34a;color:#fff;border:none;border-radius:12px;z-index:10}
+#startLeft{left:20px}
+#startRight{right:20px}
+
+#flash{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .15s;z-index:8}
+#flash.on{background:rgba(74,222,128,.3);opacity:1}
+
+#confetti{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:15;overflow:hidden}
+.confetti-piece{position:absolute;width:10px;height:16px;opacity:0;animation:fall 2.2s ease-in forwards}
+@keyframes fall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1}
+  100%{transform:translateY(100vh) rotate(720deg);opacity:0}
+}
 </style>
 </head>
 <body>
+<div id="progressRing">
+  <div id="pTop"></div>
+  <div id="pRight"></div>
+  <div id="pBottom"></div>
+  <div id="pLeft"></div>
+</div>
+
 <button id="refreshBtn">强制刷新</button>
-
-<div id="left">
-  <div class="label">女 (34)</div>
-  <div class="num" id="countLeft">0</div>
-  <button class="startBtn" id="startLeft">开始</button>
-</div>
-
-<div id="right">
-  <div class="label">男 (35)</div>
-  <div class="num" id="countRight">0</div>
-  <button class="startBtn" id="startRight">开始</button>
-</div>
-
-<div id="time">00:00</div>
 <div id="status">等待开始</div>
 
+<div id="main">
+  <div id="count">0</div>
+  <div id="target">100</div>
+</div>
+
+<div id="arrows">
+  <div id="arrowUp" class="arrow">▲</div>
+  <div id="arrowDown" class="arrow">▼</div>
+</div>
+
+<button id="startLeft">女 开始</button>
+<button id="startRight">男 开始</button>
+
 <div id="bottom">
-  <button id="switchBtn">交换</button>
+  <button id="switchBtn" style="display:none">交换</button>
   <button id="resetBtn">重置</button>
 </div>
 
 <div id="flash"></div>
+<div id="confetti"></div>
 
 <script>
 const ESP_IP = "192.168.4.1";
-const countLeftEl = document.getElementById("countLeft");
-const countRightEl = document.getElementById("countRight");
-const timeEl = document.getElementById("time");
+const TARGET = 100;
+const countEl = document.getElementById("count");
+const targetEl = document.getElementById("target");
 const statusEl = document.getElementById("status");
 const flash = document.getElementById("flash");
 const startLeftBtn = document.getElementById("startLeft");
@@ -72,20 +97,91 @@ const startRightBtn = document.getElementById("startRight");
 const switchBtn = document.getElementById("switchBtn");
 const resetBtn = document.getElementById("resetBtn");
 const refreshBtn = document.getElementById("refreshBtn");
-const leftPanel = document.getElementById("left");
-const rightPanel = document.getElementById("right");
+const arrowUp = document.getElementById("arrowUp");
+const arrowDown = document.getElementById("arrowDown");
+const confetti = document.getElementById("confetti");
 
 let started = false;
 let running = false;
 let startTime = 0;
-let validLeft = 0, validRight = 0;
+let total = 0;
 let lastSeenLeft = 0, lastSeenRight = 0;
-let pauseLeft = false, pauseRight = false;
+let activeSide = "up"; // up = left/female, down = right/male
+let done = false;
+
+function updateArrows() {
+  arrowUp.className = "arrow";
+  arrowDown.className = "arrow";
+  if (activeSide === "up") {
+    arrowUp.classList.add("active");
+    arrowDown.classList.add("paused");
+  } else {
+    arrowDown.classList.add("active");
+    arrowUp.classList.add("paused");
+  }
+}
+
+function updateProgress() {
+  const pct = Math.min(total / TARGET, 1);
+  const pTop = document.getElementById("pTop");
+  const pRight = document.getElementById("pRight");
+  const pBottom = document.getElementById("pBottom");
+  const pLeft = document.getElementById("pLeft");
+
+  if (pct <= 0.25) {
+    pTop.style.width = (pct / 0.25 * 100) + "%";
+    pRight.style.height = "0%";
+    pBottom.style.width = "0%";
+    pLeft.style.height = "0%";
+  } else if (pct <= 0.5) {
+    pTop.style.width = "100%";
+    pRight.style.height = ((pct - 0.25) / 0.25 * 100) + "%";
+    pBottom.style.width = "0%";
+    pLeft.style.height = "0%";
+  } else if (pct <= 0.75) {
+    pTop.style.width = "100%";
+    pRight.style.height = "100%";
+    pBottom.style.width = ((pct - 0.5) / 0.25 * 100) + "%";
+    pLeft.style.height = "0%";
+  } else {
+    pTop.style.width = "100%";
+    pRight.style.height = "100%";
+    pBottom.style.width = "100%";
+    pLeft.style.height = ((pct - 0.75) / 0.25 * 100) + "%";
+  }
+}
+
+function doFlash() {
+  flash.classList.add("on");
+  setTimeout(() => flash.classList.remove("on"), 160);
+}
+
+function launchConfetti() {
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random() * 100 + "%";
+    piece.style.background = ["#f87171","#4ade80","#60a5fa","#fbbf24","#a78bfa"][i % 5];
+    piece.style.animationDelay = (Math.random() * 0.4) + "s";
+    confetti.appendChild(piece);
+    setTimeout(() => piece.remove(), 2500);
+  }
+}
+
+function addCount() {
+  if (done) return;
+  total++;
+  countEl.textContent = total;
+  updateProgress();
+  doFlash();
+  if (total >= TARGET) {
+    done = true;
+    statusEl.textContent = "完成！";
+    launchConfetti();
+  }
+}
 
 function updateUI() {
-  leftPanel.classList.toggle("paused", pauseLeft);
-  rightPanel.classList.toggle("paused", pauseRight);
-
   if (!started) {
     startLeftBtn.style.display = "block";
     startRightBtn.style.display = "block";
@@ -97,38 +193,27 @@ function updateUI() {
     switchBtn.style.display = "block";
     resetBtn.style.display = "block";
   }
+  updateArrows();
 }
 
 async function pollESP() {
-  if (!started) return;
+  if (!started || done) return;
   try {
     const res = await fetch(`http://${ESP_IP}/status`, {cache:"no-store"});
     const data = await res.json();
     statusEl.textContent = "已连接 ESP";
 
-    if (!pauseLeft && (data.lastLeft||0) > lastSeenLeft) {
+    if (activeSide === "up" && (data.lastLeft||0) > lastSeenLeft) {
       lastSeenLeft = data.lastLeft;
-      validLeft++;
-      countLeftEl.textContent = validLeft;
-      flash.className = "green";
-      setTimeout(() => flash.className = "", 150);
+      addCount();
     }
-    if (!pauseRight && (data.lastRight||0) > lastSeenRight) {
+    if (activeSide === "down" && (data.lastRight||0) > lastSeenRight) {
       lastSeenRight = data.lastRight;
-      validRight++;
-      countRightEl.textContent = validRight;
-      flash.className = "green";
-      setTimeout(() => flash.className = "", 150);
+      addCount();
     }
   } catch(e) {
     statusEl.textContent = "无法连接 ESP";
   }
-}
-
-function updateTimer() {
-  if (!running) return;
-  const s = Math.floor((Date.now()-startTime)/1000);
-  timeEl.textContent = String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
 }
 
 function startWithSide(side) {
@@ -136,46 +221,37 @@ function startWithSide(side) {
   started = true;
   running = true;
   startTime = Date.now();
+  activeSide = side;
   statusEl.textContent = "已开始";
-
-  if (side === "left") {
-    pauseLeft = false;
-    pauseRight = true;
-  } else {
-    pauseRight = false;
-    pauseLeft = true;
-  }
   updateUI();
 }
 
-startLeftBtn.onclick = () => startWithSide("left");
-startRightBtn.onclick = () => startWithSide("right");
+startLeftBtn.onclick = () => startWithSide("up");
+startRightBtn.onclick = () => startWithSide("down");
 
 switchBtn.onclick = () => {
   if (!started) return;
-  if (pauseLeft) {
-    pauseLeft = false;
-    pauseRight = true;
-  } else {
-    pauseLeft = true;
-    pauseRight = false;
-  }
+  activeSide = activeSide === "up" ? "down" : "up";
   updateUI();
 };
 
 resetBtn.onclick = () => {
   started = false;
   running = false;
-  validLeft = validRight = 0;
-  countLeftEl.textContent = countRightEl.textContent = "0";
-  timeEl.textContent = "00:00";
+  done = false;
+  total = 0;
+  countEl.textContent = "0";
   lastSeenLeft = lastSeenRight = 0;
-  pauseLeft = pauseRight = false;
-  updateUI();
+  activeSide = "up";
+  document.getElementById("pTop").style.width = "0%";
+  document.getElementById("pRight").style.height = "0%";
+  document.getElementById("pBottom").style.width = "0%";
+  document.getElementById("pLeft").style.height = "0%";
+  confetti.innerHTML = "";
   statusEl.textContent = "已重置";
+  updateUI();
 };
 
-// 强制刷新：清除所有缓存后重新加载（确保拿到最新版本）
 refreshBtn.onclick = async () => {
   if ('caches' in window) {
     const keys = await caches.keys();
@@ -184,9 +260,9 @@ refreshBtn.onclick = async () => {
   location.reload(true);
 };
 
+targetEl.textContent = TARGET;
 updateUI();
 setInterval(pollESP, 150);
-setInterval(updateTimer, 200);
 </script>
 </body>
 </html>
