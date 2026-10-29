@@ -75,15 +75,19 @@ let pauseLeft = false, pauseRight = false;
 function updatePauseUI() {
   leftPanel.classList.toggle("paused", pauseLeft);
   rightPanel.classList.toggle("paused", pauseRight);
+
   if (!started) {
     pauseLeftBtn.textContent = "开始";
     pauseRightBtn.textContent = "开始";
+    pauseLeftBtn.classList.remove("paused");
+    pauseRightBtn.classList.remove("paused");
   } else {
+    // 开始后：暂停方显示「继续」，进行方显示「暂停」
     pauseLeftBtn.textContent = pauseLeft ? "继续" : "暂停";
     pauseRightBtn.textContent = pauseRight ? "继续" : "暂停";
+    pauseLeftBtn.classList.toggle("paused", pauseLeft);
+    pauseRightBtn.classList.toggle("paused", pauseRight);
   }
-  pauseLeftBtn.classList.toggle("paused", pauseLeft);
-  pauseRightBtn.classList.toggle("paused", pauseRight);
 }
 
 async function pollESP() {
@@ -119,24 +123,23 @@ function updateTimer() {
 }
 
 function startWithSide(side) {
-  if (!started) {
-    started = true;
-    running = true;
-    startTime = Date.now();
-    statusEl.textContent = "已开始";
-    if (side === "left") {
-      pauseLeft = false;
-      pauseRight = true;
-    } else {
-      pauseRight = false;
-      pauseLeft = true;
-    }
-    updatePauseUI();
+  if (started) return;
+  started = true;
+  running = true;
+  startTime = Date.now();
+  statusEl.textContent = "已开始";
+
+  if (side === "left") {
+    pauseLeft = false;   // 左进行
+    pauseRight = true;   // 右暂停
+  } else {
+    pauseRight = false;  // 右进行
+    pauseLeft = true;    // 左暂停
   }
+  updatePauseUI();
 }
 
 startBtn.onclick = () => {
-  // 重置
   started = false;
   running = false;
   validLeft = validRight = 0;
