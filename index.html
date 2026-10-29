@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -22,22 +22,22 @@ body{display:flex;flex-direction:row;align-items:center;justify-content:center;p
 #count{font-size:140px;font-weight:800;line-height:1;letter-spacing:-4px}
 #target{font-size:40px;opacity:.6;margin-top:6px;border-top:2px solid rgba(255,255,255,.3);padding-top:6px;display:inline-block;min-width:100px}
 
-#arrows{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:36px;z-index:10}
+#arrows{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:48px;z-index:10}
 .arrow{font-size:80px;line-height:1;transition:color .2s,filter .2s}
 #arrowUp{color:#ef4444}
 #arrowDown{color:#ef4444}
 #arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 14px #4ade80)}
 #arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 14px #4ade80)}
-.arrow-label{font-size:16px;opacity:.85;margin-top:4px}
+.arrow-label{font-size:15px;opacity:.9;margin-top:2px;letter-spacing:1px}
 
-#bottom{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:10}
+#bottom{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:10}
 #switchBtn{padding:16px 48px;font-size:22px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:14px}
 #resetBtn{padding:10px 28px;font-size:15px;background:#dc2626;color:#fff;border:none;border-radius:10px;display:none}
 
 #refreshBtn{position:absolute;top:10px;left:10px;padding:7px 12px;font-size:12px;background:#374151;color:#fff;border:none;border-radius:8px;z-index:20}
 #status{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:14px;background:rgba(0,0,0,.5);padding:5px 10px;border-radius:8px;z-index:10}
 
-#startUp,#startDown{position:absolute;bottom:70px;padding:12px 22px;font-size:16px;background:#16a34a;color:#fff;border:none;border-radius:10px;z-index:10}
+#startUp,#startDown{position:absolute;top:50%;transform:translateY(-50%);padding:14px 24px;font-size:16px;background:#16a34a;color:#fff;border:none;border-radius:10px;z-index:10}
 #startUp{left:16px}
 #startDown{right:16px}
 
@@ -60,8 +60,8 @@ body{display:flex;flex-direction:row;align-items:center;justify-content:center;p
   <div id="pLeft"></div>
 </div>
 
-<button id="refreshBtn">强制刷新</button>
-<div id="status">等待开始</div>
+<button id="refreshBtn">Refresh</button>
+<div id="status">Waiting</div>
 
 <div id="main">
   <div id="count">0</div>
@@ -71,20 +71,20 @@ body{display:flex;flex-direction:row;align-items:center;justify-content:center;p
 <div id="arrows">
   <div>
     <div id="arrowUp" class="arrow">▲</div>
-    <div class="arrow-label">男</div>
+    <div class="arrow-label">TOP</div>
   </div>
   <div>
     <div id="arrowDown" class="arrow">▼</div>
-    <div class="arrow-label">女</div>
+    <div class="arrow-label">BOTTOM</div>
   </div>
 </div>
 
-<button id="startUp">男 开始</button>
-<button id="startDown">女 开始</button>
+<button id="startUp">TOP Start</button>
+<button id="startDown">BOTTOM Start</button>
 
 <div id="bottom">
-  <button id="switchBtn" style="display:none">交换</button>
-  <button id="resetBtn">重置</button>
+  <button id="switchBtn" style="display:none">Switch</button>
+  <button id="resetBtn">Reset</button>
 </div>
 
 <div id="flash"></div>
@@ -180,7 +180,7 @@ function addCount() {
   doFlash();
   if (total >= TARGET) {
     done = true;
-    statusEl.textContent = "完成！";
+    statusEl.textContent = "Done!";
     launchConfetti();
   }
 }
@@ -205,7 +205,7 @@ async function pollESP() {
   try {
     const res = await fetch(`http://${ESP_IP}/status`, {cache:"no-store"});
     const data = await res.json();
-    statusEl.textContent = "已连接 ESP";
+    statusEl.textContent = "ESP Connected";
 
     if (activeSide === "up" && (data.lastRight||0) > lastSeenRight) {
       lastSeenRight = data.lastRight;
@@ -216,7 +216,7 @@ async function pollESP() {
       addCount();
     }
   } catch(e) {
-    statusEl.textContent = "无法连接 ESP";
+    statusEl.textContent = "No ESP";
   }
 }
 
@@ -226,7 +226,7 @@ function startWithSide(side) {
   running = true;
   startTime = Date.now();
   activeSide = side;
-  statusEl.textContent = "已开始";
+  statusEl.textContent = "Started";
   updateUI();
 }
 
@@ -252,7 +252,7 @@ resetBtn.onclick = () => {
   document.getElementById("pBottom").style.width = "0%";
   document.getElementById("pLeft").style.height = "0%";
   confetti.innerHTML = "";
-  statusEl.textContent = "已重置";
+  statusEl.textContent = "Reset";
   updateUI();
 };
 
