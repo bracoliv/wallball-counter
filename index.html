@@ -1,228 +1,266 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>WallBall Counter</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0a0a0a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; }
-    video, #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-    #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-    #info { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.7); padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
-    #score { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-    #count { font-size: 120px; font-weight: 800; line-height: 1; }
-    #time { font-size: 28px; opacity: 0.8; margin-top: 8px; }
-    #state { font-size: 18px; margin-top: 12px; }
-    .ok { color: #4ade80; }
-    .bad { color: #f87171; }
-    .wait { color: #fbbf24; }
-    #controls { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; gap: 16px; pointer-events: auto; }
-    button { background: #1f2937; color: #fff; border: none; padding: 14px 28px; border-radius: 12px; font-size: 16px; font-weight: 600; }
-    button.active { background: #dc2626; }
-    #flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
-    #flash.green { background: rgba(74, 222, 128, 0.35); opacity: 1; }
-    #flash.red { background: rgba(248, 113, 113, 0.35); opacity: 1; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>WallBall</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0a0a0a">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#fff;font-family:-apple-system,sans-serif;overflow:hidden}
+video,#overlay{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+#info{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.7);padding:10px 14px;border-radius:12px;font-size:14px}
+#scores{position:absolute;top:16%;left:0;width:100%;display:flex;justify-content:space-around;text-align:center}
+.score-box{background:rgba(0,0,0,.55);padding:10px 20px;border-radius:16px;min-width:110px}
+.label{font-size:16px;opacity:.8}.num{font-size:64px;font-weight:800;line-height:1}
+#time{position:absolute;top:8px;right:12px;font-size:20px;background:rgba(0,0,0,.6);padding:6px 10px;border-radius:10px}
+#state{position:absolute;top:52%;left:50%;transform:translateX(-50%);font-size:16px;background:rgba(0,0,0,.55);padding:8px 14px;border-radius:12px}
+.ok{color:#4ade80}.wait{color:#fbbf24}
+#controls{position:absolute;bottom:16px;left:0;width:100%;display:flex;justify-content:center;gap:12px;pointer-events:auto}
+button{background:#1f2937;color:#fff;border:none;padding:12px 22px;border-radius:12px;font-size:15px;font-weight:600}
+#cacheOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+#cacheOverlay.hidden{display:none}
+#cacheTitle{font-size:20px;margin-bottom:16px}
+#progressBar{width:80%;max-width:320px;height:12px;background:#222;border-radius:6px;overflow:hidden}
+#progressFill{height:100%;width:0%;background:#4ade80;transition:width .2s}
+#cacheText{margin-top:12px;font-size:14px;opacity:.8}
+#flash{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .15s}
+#flash.green{background:rgba(74,222,128,.35);opacity:1}
+#flash.red{background:rgba(248,113,113,.35);opacity:1}
+</style>
 </head>
 <body>
-  <video id="video" autoplay playsinline muted></video>
-  <canvas id="overlay"></canvas>
-  <div id="flash"></div>
-  <div id="ui">
-    <div id="info">正在连接摄像头...</div>
-    <div id="score">
-      <div id="count">0</div>
-      <div id="time">00:00</div>
-      <div id="state" class="wait">等待深蹲</div>
-    </div>
-    <div id="controls">
-      <button id="btnPause">暂停</button>
-      <button id="btnReset">重置</button>
-    </div>
+<div id="cacheOverlay">
+  <div id="cacheTitle">正在缓存资源</div>
+  <div id="progressBar"><div id="progressFill"></div></div>
+  <div id="cacheText">0%</div>
+</div>
+
+<video id="video" autoplay playsinline muted></video>
+<canvas id="overlay"></canvas>
+<div id="flash"></div>
+<div id="ui">
+  <div id="info">正在连接摄像头...</div>
+  <div id="time">00:00</div>
+  <div id="scores">
+    <div class="score-box"><div class="label">女</div><div class="num" id="countLeft">0</div></div>
+    <div class="score-box"><div class="label">男</div><div class="num" id="countRight">0</div></div>
   </div>
-  <script>
-    const ESP_IP = "192.168.4.1";
-    const video = document.getElementById("video");
-    const overlay = document.getElementById("overlay");
-    const ctx = overlay.getContext("2d");
-    const info = document.getElementById("info");
-    const countEl = document.getElementById("count");
-    const timeEl = document.getElementById("time");
-    const stateEl = document.getElementById("state");
-    const flash = document.getElementById("flash");
-    const btnPause = document.getElementById("btnPause");
-    let detector = null;
-    let running = true;
-    let startTime = Date.now();
-    let validCount = 0;
-    let lastSeenHit = 0;
-    // 状态机
-    let phase = "idle"; // idle | squatted | stoodup
-    let stoodUpTime = 0;
-    const STOODUP_WINDOW = 3000; // 站起后 3 秒窗口
-    async function setupCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 640, height: 480 },
-        audio: false
+  <div id="state" class="wait">等待深蹲</div>
+  <div id="controls">
+    <button id="btnPause">暂停</button>
+    <button id="btnReset">重置</button>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    if (reg.active) checkCache();
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'activated') checkCache();
       });
-      video.srcObject = stream;
-      return new Promise(r => video.onloadedmetadata = () => {
-        video.play();
-        overlay.width = video.videoWidth;
-        overlay.height = video.videoHeight;
-        r();
+    });
+  });
+}
+
+const CACHE_NAME = 'wallball-v2';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core',
+  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter',
+  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl',
+  'https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection'
+];
+
+async function checkCache() {
+  const cache = await caches.open(CACHE_NAME);
+  const keys = await cache.keys();
+  const cached = keys.map(k => k.url);
+  let done = 0;
+  const total = ASSETS.length;
+
+  for (const url of ASSETS) {
+    if (cached.some(c => c.includes(url.replace('./','/')))) {
+      done++;
+    }
+  }
+
+  const pct = Math.round((done / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('cacheText').textContent = pct + '%';
+
+  if (pct >= 100) {
+    setTimeout(() => {
+      document.getElementById('cacheOverlay').classList.add('hidden');
+      startApp();
+    }, 500);
+  } else {
+    // force cache remaining
+    for (const url of ASSETS) {
+      if (!cached.some(c => c.includes(url))) {
+        try { await cache.add(url); } catch(e){}
+      }
+    }
+    setTimeout(checkCache, 800);
+  }
+}
+
+function startApp() {
+  const ESP_IP = "192.168.4.1";
+  const video = document.getElementById("video");
+  const overlay = document.getElementById("overlay");
+  const ctx = overlay.getContext("2d");
+  const info = document.getElementById("info");
+  const countLeftEl = document.getElementById("countLeft");
+  const countRightEl = document.getElementById("countRight");
+  const timeEl = document.getElementById("time");
+  const stateEl = document.getElementById("state");
+  const flash = document.getElementById("flash");
+  const btnPause = document.getElementById("btnPause");
+
+  let detector = null;
+  let running = true;
+  let startTime = Date.now();
+  let validLeft = 0, validRight = 0;
+  let lastSeenLeft = 0, lastSeenRight = 0;
+  let phase = "idle", stoodUpTime = 0;
+  const STOODUP_WINDOW = 3000;
+
+  async function setupCamera() {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: 640, height: 480 }, audio: false
+    });
+    video.srcObject = stream;
+    return new Promise(r => video.onloadedmetadata = () => {
+      video.play();
+      overlay.width = video.videoWidth;
+      overlay.height = video.videoHeight;
+      r();
+    });
+  }
+
+  async function loadModel() {
+    await tf.setBackend("webgl");
+    await tf.ready();
+    detector = await poseDetection.createDetector(
+      poseDetection.SupportedModels.MoveNet,
+      { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+    );
+    info.textContent = "模型已加载";
+  }
+
+  function isDeepSquat(kp) {
+    const lh = kp[11], rh = kp[12], lk = kp[13], rk = kp[14];
+    if (!lh || !rh || !lk || !rk || lh.score < 0.35) return false;
+    return ((lh.y + rh.y) / 2) > ((lk.y + rk.y) / 2 + 15);
+  }
+  function isStanding(kp) {
+    const lh = kp[11], rh = kp[12], lk = kp[13], rk = kp[14];
+    if (!lh || !rh || !lk || !rk) return false;
+    return ((lh.y + rh.y) / 2) < ((lk.y + rk.y) / 2 - 30);
+  }
+  function updatePhase(kp) {
+    const deep = isDeepSquat(kp), stand = isStanding(kp);
+    if (phase === "idle" && deep) phase = "squatted";
+    else if (phase === "squatted" && stand) { phase = "stoodup"; stoodUpTime = Date.now(); }
+    else if (phase === "stoodup" && Date.now() - stoodUpTime > STOODUP_WINDOW) phase = "idle";
+    stateEl.textContent = phase === "idle" ? "等待深蹲" : phase === "squatted" ? "已蹲够，请站起" : "已站起，可丢球";
+    stateEl.className = phase === "idle" ? "wait" : "ok";
+  }
+
+  async function pollESP() {
+    try {
+      const res = await fetch(`http://${ESP_IP}/status`, { cache: "no-store" });
+      const data = await res.json();
+      info.textContent = "已连接 ESP";
+      if ((data.lastLeft || 0) > lastSeenLeft) {
+        lastSeenLeft = data.lastLeft;
+        if (phase === "stoodup") {
+          validLeft++; countLeftEl.textContent = validLeft;
+          flash.className = "green"; setTimeout(() => flash.className = "", 180);
+          phase = "idle";
+        } else {
+          flash.className = "red"; setTimeout(() => flash.className = "", 180);
+        }
+      }
+      if ((data.lastRight || 0) > lastSeenRight) {
+        lastSeenRight = data.lastRight;
+        if (phase === "stoodup") {
+          validRight++; countRightEl.textContent = validRight;
+          flash.className = "green"; setTimeout(() => flash.className = "", 180);
+          phase = "idle";
+        } else {
+          flash.className = "red"; setTimeout(() => flash.className = "", 180);
+        }
+      }
+    } catch (e) {
+      info.textContent = "无法连接 ESP";
+    }
+  }
+
+  function updateTimer() {
+    if (!running) return;
+    const s = Math.floor((Date.now() - startTime) / 1000);
+    timeEl.textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  }
+
+  async function detectLoop() {
+    if (!detector || !running) { requestAnimationFrame(detectLoop); return; }
+    const poses = await detector.estimatePoses(video, { flipHorizontal: false });
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    ctx.save(); ctx.scale(-1, 1);
+    ctx.drawImage(video, -overlay.width, 0, overlay.width, overlay.height);
+    ctx.restore();
+    if (poses.length) {
+      const kp = poses[0].keypoints;
+      updatePhase(kp);
+      [11,12,13,14,15,16].forEach(i => {
+        const p = kp[i];
+        if (p && p.score > 0.3) {
+          ctx.beginPath();
+          ctx.arc(overlay.width - p.x, p.y, 5, 0, Math.PI * 2);
+          ctx.fillStyle = phase === "stoodup" ? "#4ade80" : "#60a5fa";
+          ctx.fill();
+        }
       });
     }
-    async function loadModel() {
-      await tf.setBackend("webgl");
-      await tf.ready();
-      detector = await poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet,
-        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
-      );
-      info.textContent = "模型已加载，连接 ESP 中...";
-    }
-    function calcAngle(a, b, c) {
-      if (!a || !b || !c) return 180;
-      const rad = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-      let ang = Math.abs(rad * 180 / Math.PI);
-      return ang > 180 ? 360 - ang : ang;
-    }
-    function isDeepSquat(kp) {
-      const lh = kp[11], rh = kp[12], lk = kp[13], rk = kp[14];
-      const la = kp[15], ra = kp[16];
-      if (!lh || !rh || !lk || !rk) return false;
-      if (lh.score < 0.35 || rh.score < 0.35) return false;
-      const hipY = (lh.y + rh.y) / 2;
-      const kneeY = (lk.y + rk.y) / 2;
-      const depthOK = hipY > kneeY + 15;
-      let angleOK = false;
-      if (la && ra) {
-        const a1 = calcAngle(lh, lk, la);
-        const a2 = calcAngle(rh, rk, ra);
-        angleOK = ((a1 + a2) / 2) < 105;
-      }
-      return depthOK || angleOK;
-    }
-    function isStanding(kp) {
-      const lh = kp[11], rh = kp[12], lk = kp[13], rk = kp[14];
-      if (!lh || !rh || !lk || !rk) return false;
-      const hipY = (lh.y + rh.y) / 2;
-      const kneeY = (lk.y + rk.y) / 2;
-      return hipY < kneeY - 30;
-    }
-    function updatePhase(kp) {
-      const deep = isDeepSquat(kp);
-      const stand = isStanding(kp);
-      if (phase === "idle" && deep) {
-        phase = "squatted";
-      } else if (phase === "squatted" && stand) {
-        phase = "stoodup";
-        stoodUpTime = Date.now();
-      } else if (phase === "stoodup" && (Date.now() - stoodUpTime > STOODUP_WINDOW)) {
-        phase = "idle";
-      }
-      // UI
-      if (phase === "idle") {
-        stateEl.textContent = "等待深蹲";
-        stateEl.className = "wait";
-      } else if (phase === "squatted") {
-        stateEl.textContent = "已蹲够，请站起";
-        stateEl.className = "ok";
-      } else if (phase === "stoodup") {
-        stateEl.textContent = "已站起，可丢球";
-        stateEl.className = "ok";
-      }
-    }
-    async function pollESP() {
-      try {
-        const res = await fetch(`http://${ESP_IP}/status`, {
-          cache: "no-store"
-        });
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const data = await res.json();
-        info.textContent = "ESP32 已连接";
-        const latest = Math.max(data.lastLeft || 0, data.lastRight || 0);
-        if (latest > lastSeenHit) {
-          lastSeenHit = latest;
-          if (phase === "stoodup") {
-            validCount++;
-            countEl.textContent = validCount;
-            flash.className = "green";
-            setTimeout(() => flash.className = "", 180);
-            phase = "idle";
-          } else {
-            flash.className = "red";
-            setTimeout(() => flash.className = "", 180);
-          }
-        }
-      } catch (e) {
-        console.error("ESP32 连接失败:", e);
-        info.textContent = "无法连接 ESP32，请检查热点及本地网络权限";
-      }
-    }
-    function updateTimer() {
-      if (!running) return;
-      const s = Math.floor((Date.now() - startTime) / 1000);
-      const m = String(Math.floor(s / 60)).padStart(2, "0");
-      const sec = String(s % 60).padStart(2, "0");
-      timeEl.textContent = `${m}:${sec}`;
-    }
-    async function detectLoop() {
-      if (!detector || !running) {
-        requestAnimationFrame(detectLoop);
-        return;
-      }
-      const poses = await detector.estimatePoses(video, { flipHorizontal: false });
-      ctx.clearRect(0, 0, overlay.width, overlay.height);
-      ctx.save();
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, -overlay.width, 0, overlay.width, overlay.height);
-      ctx.restore();
-      if (poses.length > 0) {
-        const kp = poses[0].keypoints;
-        updatePhase(kp);
-        // 画下半身关键点
-        [11,12,13,14,15,16].forEach(i => {
-          const p = kp[i];
-          if (p && p.score > 0.3) {
-            ctx.beginPath();
-            ctx.arc(overlay.width - p.x, p.y, 5, 0, Math.PI * 2);
-            ctx.fillStyle = phase === "stoodup" ? "#4ade80" : "#60a5fa";
-            ctx.fill();
-          }
-        });
-      }
-      requestAnimationFrame(detectLoop);
-    }
-    btnPause.onclick = () => {
-      running = !running;
-      btnPause.textContent = running ? "暂停" : "继续";
-      btnPause.classList.toggle("active", !running);
-      if (running) startTime = Date.now() - (Date.now() - startTime);
-    };
-    document.getElementById("btnReset").onclick = () => {
-      validCount = 0;
-      countEl.textContent = "0";
-      phase = "idle";
-      startTime = Date.now();
-      lastSeenHit = 0;
-    };
-    async function main() {
-      await setupCamera();
-      await loadModel();
-      setInterval(pollESP, 150);
-      setInterval(updateTimer, 200);
-      detectLoop();
-    }
-    main();
-  </script>
+    requestAnimationFrame(detectLoop);
+  }
+
+  btnPause.onclick = () => {
+    running = !running;
+    btnPause.textContent = running ? "暂停" : "继续";
+  };
+  document.getElementById("btnReset").onclick = () => {
+    validLeft = validRight = 0;
+    countLeftEl.textContent = countRightEl.textContent = "0";
+    phase = "idle";
+    startTime = Date.now();
+    lastSeenLeft = lastSeenRight = 0;
+  };
+
+  (async () => {
+    await setupCamera();
+    await loadModel();
+    setInterval(pollESP, 150);
+    setInterval(updateTimer, 200);
+    detectLoop();
+  })();
+}
+
+// start checking cache
+setTimeout(checkCache, 500);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 </body>
 </html>

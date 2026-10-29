@@ -1,7 +1,8 @@
-const CACHE_NAME = 'wallball-v1';
+const CACHE_NAME = 'wallball-v2';
 const ASSETS = [
   './',
   './index.html',
+  './manifest.json',
   'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core',
   'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter',
   'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl',
@@ -29,9 +30,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
       return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type === 'error') {
-          return response;
-        }
+        if (!response || response.status !== 200 || response.type === 'error') return response;
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return response;
