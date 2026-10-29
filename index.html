@@ -28,6 +28,7 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 #arrowDown{color:#ef4444}
 #arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
 #arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
+.arrow-label{font-size:14px;opacity:.8;margin-top:4px}
 
 #bottom{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:10}
 #switchBtn{padding:20px 56px;font-size:26px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:16px}
@@ -36,9 +37,9 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 #refreshBtn{position:absolute;top:12px;left:12px;padding:8px 14px;font-size:13px;background:#374151;color:#fff;border:none;border-radius:8px;z-index:20}
 #status{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:15px;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:8px;z-index:10}
 
-#startLeft,#startRight{position:absolute;bottom:100px;padding:14px 28px;font-size:18px;background:#16a34a;color:#fff;border:none;border-radius:12px;z-index:10}
-#startLeft{left:20px}
-#startRight{right:20px}
+#startUp,#startDown{position:absolute;bottom:100px;padding:14px 28px;font-size:18px;background:#16a34a;color:#fff;border:none;border-radius:12px;z-index:10}
+#startUp{left:20px}
+#startDown{right:20px}
 
 #flash{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .15s;z-index:8}
 #flash.on{background:rgba(74,222,128,.3);opacity:1}
@@ -68,12 +69,18 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 </div>
 
 <div id="arrows">
-  <div id="arrowUp" class="arrow">▲</div>
-  <div id="arrowDown" class="arrow">▼</div>
+  <div>
+    <div id="arrowUp" class="arrow">▲</div>
+    <div class="arrow-label">男</div>
+  </div>
+  <div>
+    <div id="arrowDown" class="arrow">▼</div>
+    <div class="arrow-label">女</div>
+  </div>
 </div>
 
-<button id="startLeft">女 开始</button>
-<button id="startRight">男 开始</button>
+<button id="startUp">男 开始</button>
+<button id="startDown">女 开始</button>
 
 <div id="bottom">
   <button id="switchBtn" style="display:none">交换</button>
@@ -90,8 +97,8 @@ const countEl = document.getElementById("count");
 const targetEl = document.getElementById("target");
 const statusEl = document.getElementById("status");
 const flash = document.getElementById("flash");
-const startLeftBtn = document.getElementById("startLeft");
-const startRightBtn = document.getElementById("startRight");
+const startUpBtn = document.getElementById("startUp");
+const startDownBtn = document.getElementById("startDown");
 const switchBtn = document.getElementById("switchBtn");
 const resetBtn = document.getElementById("resetBtn");
 const refreshBtn = document.getElementById("refreshBtn");
@@ -104,7 +111,7 @@ let running = false;
 let startTime = 0;
 let total = 0;
 let lastSeenLeft = 0, lastSeenRight = 0;
-let activeSide = "up";
+let activeSide = "up"; // up = 男 (GPIO35), down = 女 (GPIO34)
 let done = false;
 
 function updateArrows() {
@@ -179,13 +186,13 @@ function addCount() {
 
 function updateUI() {
   if (!started) {
-    startLeftBtn.style.display = "block";
-    startRightBtn.style.display = "block";
+    startUpBtn.style.display = "block";
+    startDownBtn.style.display = "block";
     switchBtn.style.display = "none";
     resetBtn.style.display = "none";
   } else {
-    startLeftBtn.style.display = "none";
-    startRightBtn.style.display = "none";
+    startUpBtn.style.display = "none";
+    startDownBtn.style.display = "none";
     switchBtn.style.display = "block";
     resetBtn.style.display = "block";
   }
@@ -199,12 +206,14 @@ async function pollESP() {
     const data = await res.json();
     statusEl.textContent = "已连接 ESP";
 
-    if (activeSide === "up" && (data.lastLeft||0) > lastSeenLeft) {
-      lastSeenLeft = data.lastLeft;
+    // 男 = up = GPIO35 (right)
+    // 女 = down = GPIO34 (left)
+    if (activeSide === "up" && (data.lastRight||0) > lastSeenRight) {
+      lastSeenRight = data.lastRight;
       addCount();
     }
-    if (activeSide === "down" && (data.lastRight||0) > lastSeenRight) {
-      lastSeenRight = data.lastRight;
+    if (activeSide === "down" && (data.lastLeft||0) > lastSeenLeft) {
+      lastSeenLeft = data.lastLeft;
       addCount();
     }
   } catch(e) {
@@ -222,8 +231,8 @@ function startWithSide(side) {
   updateUI();
 }
 
-startLeftBtn.onclick = () => startWithSide("up");
-startRightBtn.onclick = () => startWithSide("down");
+startUpBtn.onclick = () => startWithSide("up");
+startDownBtn.onclick = () => startWithSide("down");
 
 switchBtn.onclick = () => {
   if (!started) return;
