@@ -9,7 +9,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;background:#0f172a;color:#fff;font-family:-apple-system,sans-serif;overflow:hidden}
-body{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+body{display:flex;flex-direction:row;align-items:center;justify-content:center;position:relative}
 
 #progressRing{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
 #progressRing div{position:absolute;background:#22c55e;transition:width .2s,height .2s}
@@ -19,36 +19,36 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 #pLeft{bottom:0;left:0;width:6px;height:0%}
 
 #main{position:relative;z-index:5;text-align:center}
-#count{font-size:160px;font-weight:800;line-height:1;letter-spacing:-4px}
-#target{font-size:48px;opacity:.6;margin-top:8px;border-top:2px solid rgba(255,255,255,.3);padding-top:8px;display:inline-block;min-width:120px}
+#count{font-size:140px;font-weight:800;line-height:1;letter-spacing:-4px}
+#target{font-size:40px;opacity:.6;margin-top:6px;border-top:2px solid rgba(255,255,255,.3);padding-top:6px;display:inline-block;min-width:100px}
 
-#arrows{position:absolute;right:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:40px;z-index:10}
-.arrow{font-size:72px;line-height:1;transition:color .2s,filter .2s}
+#arrows{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:28px;z-index:10}
+.arrow{font-size:56px;line-height:1;transition:color .2s,filter .2s}
 #arrowUp{color:#ef4444}
 #arrowDown{color:#ef4444}
-#arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
-#arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
-.arrow-label{font-size:14px;opacity:.8;margin-top:4px}
+#arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 10px #4ade80)}
+#arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 10px #4ade80)}
+.arrow-label{font-size:13px;opacity:.85;margin-top:2px}
 
-#bottom{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:10}
-#switchBtn{padding:20px 56px;font-size:26px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:16px}
-#resetBtn{padding:12px 32px;font-size:16px;background:#dc2626;color:#fff;border:none;border-radius:12px;display:none}
+#bottom{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:10}
+#switchBtn{padding:16px 48px;font-size:22px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:14px}
+#resetBtn{padding:10px 28px;font-size:15px;background:#dc2626;color:#fff;border:none;border-radius:10px;display:none}
 
-#refreshBtn{position:absolute;top:12px;left:12px;padding:8px 14px;font-size:13px;background:#374151;color:#fff;border:none;border-radius:8px;z-index:20}
-#status{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:15px;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:8px;z-index:10}
+#refreshBtn{position:absolute;top:10px;left:10px;padding:7px 12px;font-size:12px;background:#374151;color:#fff;border:none;border-radius:8px;z-index:20}
+#status{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:14px;background:rgba(0,0,0,.5);padding:5px 10px;border-radius:8px;z-index:10}
 
-#startUp,#startDown{position:absolute;bottom:100px;padding:14px 28px;font-size:18px;background:#16a34a;color:#fff;border:none;border-radius:12px;z-index:10}
-#startUp{left:20px}
-#startDown{right:20px}
+#startUp,#startDown{position:absolute;bottom:70px;padding:12px 22px;font-size:16px;background:#16a34a;color:#fff;border:none;border-radius:10px;z-index:10}
+#startUp{left:16px}
+#startDown{right:16px}
 
 #flash{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .15s;z-index:8}
 #flash.on{background:rgba(74,222,128,.3);opacity:1}
 
 #confetti{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:15;overflow:hidden}
-.confetti-piece{position:absolute;width:10px;height:16px;opacity:0;animation:fall 2.2s ease-in forwards}
+.confetti-piece{position:absolute;width:8px;height:14px;opacity:0;animation:fall 3.5s ease-in forwards}
 @keyframes fall{
-  0%{transform:translateY(-20px) rotate(0deg);opacity:1}
-  100%{transform:translateY(100vh) rotate(720deg);opacity:0}
+  0%{transform:translateY(-30px) rotate(0deg);opacity:1}
+  100%{transform:translateY(105vh) rotate(900deg);opacity:0.9}
 }
 </style>
 </head>
@@ -160,14 +160,15 @@ function doFlash() {
 }
 
 function launchConfetti() {
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 80; i++) {
     const piece = document.createElement("div");
     piece.className = "confetti-piece";
     piece.style.left = Math.random() * 100 + "%";
-    piece.style.background = ["#f87171","#4ade80","#60a5fa","#fbbf24","#a78bfa"][i % 5];
-    piece.style.animationDelay = (Math.random() * 0.4) + "s";
+    piece.style.background = ["#f87171","#4ade80","#60a5fa","#fbbf24","#a78bfa","#f472b6"][i % 6];
+    piece.style.animationDelay = (Math.random() * 0.5) + "s";
+    piece.style.animationDuration = (2.8 + Math.random() * 1.5) + "s";
     confetti.appendChild(piece);
-    setTimeout(() => piece.remove(), 2500);
+    setTimeout(() => piece.remove(), 4500);
   }
 }
 
@@ -206,6 +207,7 @@ async function pollESP() {
     const data = await res.json();
     statusEl.textContent = "已连接 ESP";
 
+    // 交换时只激活对应感应器
     // 男 = up = GPIO35 (right)
     // 女 = down = GPIO34 (left)
     if (activeSide === "up" && (data.lastRight||0) > lastSeenRight) {
