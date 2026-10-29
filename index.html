@@ -256,12 +256,21 @@ resetBtn.onclick = () => {
   updateUI();
 };
 
+// 强制刷新：清缓存 + 注销 Service Worker + 带时间戳重新加载
 refreshBtn.onclick = async () => {
-  if ('caches' in window) {
-    const keys = await caches.keys();
-    await Promise.all(keys.map(k => caches.delete(k)));
-  }
-  location.reload(true);
+  statusEl.textContent = "Refreshing...";
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) {}
+  const url = location.origin + location.pathname + "?t=" + Date.now();
+  location.replace(url);
 };
 
 targetEl.textContent = TARGET;
