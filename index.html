@@ -36,18 +36,18 @@ body{display:flex;flex-direction:row}
 <div id="left">
   <div class="label">女 (34)</div>
   <div class="num" id="countLeft">0</div>
-  <button class="pauseBtn" id="pauseLeft">暂停</button>
+  <button class="pauseBtn" id="pauseLeft">开始</button>
 </div>
 
 <div id="right">
   <div class="label">男 (35)</div>
   <div class="num" id="countRight">0</div>
-  <button class="pauseBtn" id="pauseRight">暂停</button>
+  <button class="pauseBtn" id="pauseRight">开始</button>
 </div>
 
 <div id="center">
   <div id="time">00:00</div>
-  <button id="startBtn">开始</button>
+  <button id="startBtn">重置</button>
   <div id="status">等待开始</div>
 </div>
 <div id="flash"></div>
@@ -75,8 +75,13 @@ let pauseLeft = false, pauseRight = false;
 function updatePauseUI() {
   leftPanel.classList.toggle("paused", pauseLeft);
   rightPanel.classList.toggle("paused", pauseRight);
-  pauseLeftBtn.textContent = pauseLeft ? "继续" : "暂停";
-  pauseRightBtn.textContent = pauseRight ? "继续" : "暂停";
+  if (!started) {
+    pauseLeftBtn.textContent = "开始";
+    pauseRightBtn.textContent = "开始";
+  } else {
+    pauseLeftBtn.textContent = pauseLeft ? "继续" : "暂停";
+    pauseRightBtn.textContent = pauseRight ? "继续" : "暂停";
+  }
   pauseLeftBtn.classList.toggle("paused", pauseLeft);
   pauseRightBtn.classList.toggle("paused", pauseRight);
 }
@@ -113,38 +118,56 @@ function updateTimer() {
   timeEl.textContent = String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
 }
 
-startBtn.onclick = () => {
+function startWithSide(side) {
   if (!started) {
     started = true;
     running = true;
     startTime = Date.now();
-    startBtn.textContent = "重置";
     statusEl.textContent = "已开始";
-  } else {
-    started = false;
-    running = false;
-    validLeft = validRight = 0;
-    countLeftEl.textContent = countRightEl.textContent = "0";
-    timeEl.textContent = "00:00";
-    lastSeenLeft = lastSeenRight = 0;
-    pauseLeft = pauseRight = false;
+    if (side === "left") {
+      pauseLeft = false;
+      pauseRight = true;
+    } else {
+      pauseRight = false;
+      pauseLeft = true;
+    }
     updatePauseUI();
-    startBtn.textContent = "开始";
-    statusEl.textContent = "已重置";
   }
+}
+
+startBtn.onclick = () => {
+  // 重置
+  started = false;
+  running = false;
+  validLeft = validRight = 0;
+  countLeftEl.textContent = countRightEl.textContent = "0";
+  timeEl.textContent = "00:00";
+  lastSeenLeft = lastSeenRight = 0;
+  pauseLeft = pauseRight = false;
+  updatePauseUI();
+  statusEl.textContent = "已重置";
 };
 
 pauseLeftBtn.onclick = () => {
-  pauseLeft = !pauseLeft;
-  if (pauseLeft) pauseRight = false;   // 一方暂停，另一方自动继续
-  updatePauseUI();
+  if (!started) {
+    startWithSide("left");
+  } else {
+    pauseLeft = !pauseLeft;
+    if (pauseLeft) pauseRight = false;
+    updatePauseUI();
+  }
 };
 pauseRightBtn.onclick = () => {
-  pauseRight = !pauseRight;
-  if (pauseRight) pauseLeft = false;   // 一方暂停，另一方自动继续
-  updatePauseUI();
+  if (!started) {
+    startWithSide("right");
+  } else {
+    pauseRight = !pauseRight;
+    if (pauseRight) pauseLeft = false;
+    updatePauseUI();
+  }
 };
 
+updatePauseUI();
 setInterval(pollESP, 150);
 setInterval(updateTimer, 200);
 </script>
