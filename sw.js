@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wallball-v2';
+const CACHE_NAME = 'wallball-v3';
 const ASSETS = [
   './',
   './index.html',
