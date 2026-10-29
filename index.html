@@ -19,12 +19,13 @@ body{display:flex;flex-direction:row}
 
 .label{font-size:28px;opacity:.9;margin-bottom:8px}
 .num{font-size:140px;font-weight:800;line-height:1}
-.pauseBtn{margin-top:20px;padding:16px 40px;font-size:20px;background:#222;color:#fff;border:none;border-radius:12px}
-.pauseBtn.paused{background:#dc2626}
+.startBtn{margin-top:20px;padding:16px 40px;font-size:20px;background:#16a34a;color:#fff;border:none;border-radius:12px}
 
 #center{position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;z-index:10}
 #time{font-size:36px;background:rgba(0,0,0,.7);padding:8px 20px;border-radius:12px;margin-top:12px}
-#startBtn{margin-top:12px;padding:14px 36px;font-size:20px;background:#16a34a;color:#fff;border:none;border-radius:12px}
+#switchBtn{margin-top:12px;padding:14px 36px;font-size:20px;background:#2563eb;color:#fff;border:none;border-radius:12px;display:none}
+#resetBtn{margin-top:8px;padding:12px 28px;font-size:18px;background:#dc2626;color:#fff;border:none;border-radius:12px;display:none}
+#refreshBtn{margin-top:8px;padding:10px 20px;font-size:14px;background:#374151;color:#fff;border:none;border-radius:10px}
 #status{margin-top:8px;font-size:16px;background:rgba(0,0,0,.6);padding:6px 14px;border-radius:8px}
 
 #flash{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .15s;z-index:5}
@@ -36,18 +37,20 @@ body{display:flex;flex-direction:row}
 <div id="left">
   <div class="label">女 (34)</div>
   <div class="num" id="countLeft">0</div>
-  <button class="pauseBtn" id="pauseLeft">开始</button>
+  <button class="startBtn" id="startLeft">开始</button>
 </div>
 
 <div id="right">
   <div class="label">男 (35)</div>
   <div class="num" id="countRight">0</div>
-  <button class="pauseBtn" id="pauseRight">开始</button>
+  <button class="startBtn" id="startRight">开始</button>
 </div>
 
 <div id="center">
   <div id="time">00:00</div>
-  <button id="startBtn">重置</button>
+  <button id="switchBtn">交换</button>
+  <button id="resetBtn">重置</button>
+  <button id="refreshBtn">强制刷新</button>
   <div id="status">等待开始</div>
 </div>
 <div id="flash"></div>
@@ -59,9 +62,11 @@ const countRightEl = document.getElementById("countRight");
 const timeEl = document.getElementById("time");
 const statusEl = document.getElementById("status");
 const flash = document.getElementById("flash");
-const startBtn = document.getElementById("startBtn");
-const pauseLeftBtn = document.getElementById("pauseLeft");
-const pauseRightBtn = document.getElementById("pauseRight");
+const startLeftBtn = document.getElementById("startLeft");
+const startRightBtn = document.getElementById("startRight");
+const switchBtn = document.getElementById("switchBtn");
+const resetBtn = document.getElementById("resetBtn");
+const refreshBtn = document.getElementById("refreshBtn");
 const leftPanel = document.getElementById("left");
 const rightPanel = document.getElementById("right");
 
@@ -72,20 +77,20 @@ let validLeft = 0, validRight = 0;
 let lastSeenLeft = 0, lastSeenRight = 0;
 let pauseLeft = false, pauseRight = false;
 
-function updatePauseUI() {
+function updateUI() {
   leftPanel.classList.toggle("paused", pauseLeft);
   rightPanel.classList.toggle("paused", pauseRight);
 
   if (!started) {
-    pauseLeftBtn.textContent = "开始";
-    pauseRightBtn.textContent = "开始";
-    pauseLeftBtn.classList.remove("paused");
-    pauseRightBtn.classList.remove("paused");
+    startLeftBtn.style.display = "block";
+    startRightBtn.style.display = "block";
+    switchBtn.style.display = "none";
+    resetBtn.style.display = "none";
   } else {
-    pauseLeftBtn.textContent = pauseLeft ? "继续" : "暂停";
-    pauseRightBtn.textContent = pauseRight ? "继续" : "暂停";
-    pauseLeftBtn.classList.toggle("paused", pauseLeft);
-    pauseRightBtn.classList.toggle("paused", pauseRight);
+    startLeftBtn.style.display = "none";
+    startRightBtn.style.display = "none";
+    switchBtn.style.display = "block";
+    resetBtn.style.display = "block";
   }
 }
 
@@ -135,10 +140,26 @@ function startWithSide(side) {
     pauseRight = false;
     pauseLeft = true;
   }
-  updatePauseUI();
+  updateUI();
 }
 
-startBtn.onclick = () => {
+startLeftBtn.onclick = () => startWithSide("left");
+startRightBtn.onclick = () => startWithSide("right");
+
+switchBtn.onclick = () => {
+  if (!started) return;
+  // 交换：当前继续的那一方暂停，另一方继续
+  if (pauseLeft) {
+    pauseLeft = false;
+    pauseRight = true;
+  } else {
+    pauseLeft = true;
+    pauseRight = false;
+  }
+  updateUI();
+};
+
+resetBtn.onclick = () => {
   started = false;
   running = false;
   validLeft = validRight = 0;
@@ -146,32 +167,19 @@ startBtn.onclick = () => {
   timeEl.textContent = "00:00";
   lastSeenLeft = lastSeenRight = 0;
   pauseLeft = pauseRight = false;
-  updatePauseUI();
+  updateUI();
   statusEl.textContent = "已重置";
 };
 
-pauseLeftBtn.onclick = () => {
-  if (!started) {
-    startWithSide("left");
-    return;
+refreshBtn.onclick = () => {
+  if ('caches' in window) {
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => location.reload(true));
+  } else {
+    location.reload(true);
   }
-  // 强制互斥：点左边就让左边继续，右边暂停
-  pauseLeft = false;
-  pauseRight = true;
-  updatePauseUI();
-};
-pauseRightBtn.onclick = () => {
-  if (!started) {
-    startWithSide("right");
-    return;
-  }
-  // 强制互斥：点右边就让右边继续，左边暂停
-  pauseRight = false;
-  pauseLeft = true;
-  updatePauseUI();
 };
 
-updatePauseUI();
+updateUI();
 setInterval(pollESP, 150);
 setInterval(updateTimer, 200);
 </script>
