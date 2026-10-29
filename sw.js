@@ -1,18 +1,8 @@
-const CACHE_NAME = 'wallball-v3';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core',
-  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter',
-  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl',
-  'https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection'
-];
+const CACHE_NAME = 'wallball-simple-v1';
+const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
   self.skipWaiting();
 });
 
@@ -27,14 +17,6 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type === 'error') return response;
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return response;
-      }).catch(() => caches.match(event.request));
-    })
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });
