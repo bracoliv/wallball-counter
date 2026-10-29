@@ -24,12 +24,10 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 
 #arrows{position:absolute;right:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:40px;z-index:10}
 .arrow{font-size:72px;line-height:1;transition:color .2s,filter .2s}
-#arrowUp{color:#4b5563}
-#arrowDown{color:#4b5563}
+#arrowUp{color:#ef4444}
+#arrowDown{color:#ef4444}
 #arrowUp.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
-#arrowDown.active{color:#f97316;filter:drop-shadow(0 0 12px #f97316)}
-#arrowUp.paused{color:#ef4444}
-#arrowDown.paused{color:#ef4444}
+#arrowDown.active{color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
 
 #bottom{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:10}
 #switchBtn{padding:20px 56px;font-size:26px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:16px}
@@ -106,7 +104,7 @@ let running = false;
 let startTime = 0;
 let total = 0;
 let lastSeenLeft = 0, lastSeenRight = 0;
-let activeSide = "up"; // up = left/female, down = right/male
+let activeSide = "up";
 let done = false;
 
 function updateArrows() {
@@ -114,10 +112,8 @@ function updateArrows() {
   arrowDown.className = "arrow";
   if (activeSide === "up") {
     arrowUp.classList.add("active");
-    arrowDown.classList.add("paused");
   } else {
     arrowDown.classList.add("active");
-    arrowUp.classList.add("paused");
   }
 }
 
