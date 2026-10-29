@@ -82,7 +82,6 @@ function updatePauseUI() {
     pauseLeftBtn.classList.remove("paused");
     pauseRightBtn.classList.remove("paused");
   } else {
-    // 开始后：暂停方显示「继续」，进行方显示「暂停」
     pauseLeftBtn.textContent = pauseLeft ? "继续" : "暂停";
     pauseRightBtn.textContent = pauseRight ? "继续" : "暂停";
     pauseLeftBtn.classList.toggle("paused", pauseLeft);
@@ -130,11 +129,11 @@ function startWithSide(side) {
   statusEl.textContent = "已开始";
 
   if (side === "left") {
-    pauseLeft = false;   // 左进行
-    pauseRight = true;   // 右暂停
+    pauseLeft = false;
+    pauseRight = true;
   } else {
-    pauseRight = false;  // 右进行
-    pauseLeft = true;    // 左暂停
+    pauseRight = false;
+    pauseLeft = true;
   }
   updatePauseUI();
 }
@@ -155,8 +154,15 @@ pauseLeftBtn.onclick = () => {
   if (!started) {
     startWithSide("left");
   } else {
-    pauseLeft = !pauseLeft;
-    if (pauseLeft) pauseRight = false;
+    // 点继续（当前是暂停）时，另一方自动暂停
+    if (pauseLeft) {
+      pauseLeft = false;
+      pauseRight = true;
+    } else {
+      // 点暂停时，另一方自动继续
+      pauseLeft = true;
+      pauseRight = false;
+    }
     updatePauseUI();
   }
 };
@@ -164,8 +170,13 @@ pauseRightBtn.onclick = () => {
   if (!started) {
     startWithSide("right");
   } else {
-    pauseRight = !pauseRight;
-    if (pauseRight) pauseLeft = false;
+    if (pauseRight) {
+      pauseRight = false;
+      pauseLeft = true;
+    } else {
+      pauseRight = true;
+      pauseLeft = false;
+    }
     updatePauseUI();
   }
 };
