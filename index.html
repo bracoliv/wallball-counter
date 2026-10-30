@@ -26,7 +26,7 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 
 #arrows{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:40px;z-index:10}
 .arrow-wrap{display:flex;flex-direction:column;align-items:center;text-align:center;width:80px}
-.arrow{width:0;height:0;border-left:28px solid transparent;border-right:28px solid transparent;transition:border-color .2s,filter .2s}
+.arrow{width:0;height:0;border-left:28px solid transparent;border-right:28px solid transparent;transition:border-color .2s,filter .2s;cursor:pointer}
 .arrow.up{border-bottom:44px solid #ef4444;border-top:0}
 .arrow.down{border-top:44px solid #ef4444;border-bottom:0}
 .arrow.up.active{border-bottom-color:#4ade80;filter:drop-shadow(0 0 12px #4ade80)}
@@ -56,6 +56,14 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   0%{transform:translateY(-30px) rotate(0deg);opacity:1}
   100%{transform:translateY(105vh) rotate(900deg);opacity:0.9}
 }
+
+/* Admin */
+#adminModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:100;display:none;align-items:center;justify-content:center;flex-direction:column}
+#adminPanel{background:#1e293b;padding:24px;border-radius:16px;width:90%;max-width:400px;text-align:center}
+#adminPanel input[type=number]{width:100px;padding:8px;font-size:18px;margin:8px;text-align:center}
+#adminPanel button{margin:8px;padding:10px 20px;font-size:16px;background:#2563eb;color:#fff;border:none;border-radius:8px}
+#adcInfo{font-size:14px;margin:10px 0;line-height:1.6;opacity:.9}
+#hitLog{font-size:12px;max-height:120px;overflow-y:auto;background:#0f172a;padding:8px;border-radius:8px;margin-top:8px;text-align:left}
 </style>
 </head>
 <body>
@@ -106,6 +114,24 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 <div id="flash"></div>
 <div id="confetti"></div>
 
+<div id="adminModal">
+  <div id="adminPanel">
+    <h3 style="margin-bottom:12px">Admin Sensitivity</h3>
+    <div id="adcInfo">Loading...</div>
+    <div>
+      BOTTOM (34/女) Threshold:<br>
+      <input type="number" id="threshLeft" min="100" max="3000" step="10" value="800">
+    </div>
+    <div>
+      TOP (35/男) Threshold:<br>
+      <input type="number" id="threshRight" min="100" max="3000" step="10" value="800">
+    </div>
+    <button id="applyBtn">Apply</button>
+    <button id="closeAdmin" style="background:#64748b">Close</button>
+    <div id="hitLog"></div>
+  </div>
+</div>
+
 <script>
 const ESP_IP = "192.168.4.1";
 const TARGET = 100;
@@ -124,6 +150,13 @@ const refreshBtn = document.getElementById("refreshBtn");
 const arrowUp = document.getElementById("arrowUp");
 const arrowDown = document.getElementById("arrowDown");
 const confetti = document.getElementById("confetti");
+const adminModal = document.getElementById("adminModal");
+const adcInfo = document.getElementById("adcInfo");
+const hitLog = document.getElementById("hitLog");
+const threshLeftInput = document.getElementById("threshLeft");
+const threshRightInput = document.getElementById("threshRight");
+const applyBtn = document.getElementById("applyBtn");
+const closeAdmin = document.getElementById("closeAdmin");
 
 let started = false;
 let running = false;
@@ -132,6 +165,9 @@ let total = 0;
 let lastSeenLeft = 0, lastSeenRight = 0;
 let activeSide = "up";
 let done = false;
+let adminOpen = false;
+let upPressed = false, downPressed = false;
+let holdTimer = null;
 
 function updateArrows() {
   arrowUp.className = "arrow up";
@@ -235,20 +271,41 @@ function updateUI() {
   updateArrows();
 }
 
+function addLog(msg) {
+  const div = document.createElement("div");
+  div.textContent = new Date().toLocaleTimeString() + " " + msg;
+  hitLog.prepend(div);
+  while (hitLog.children.length > 20) hitLog.removeChild(hitLog.lastChild);
+}
+
 async function pollESP() {
-  if (!started || done) return;
+  if (!started || done) {
+    // still poll for admin ADC
+    if (!adminOpen) return;
+  }
   try {
     const res = await fetch(`http://${ESP_IP}/status`, {cache:"no-store"});
     const data = await res.json();
     statusEl.textContent = "ESP Connected";
 
-    if (activeSide === "up" && (data.lastRight||0) > lastSeenRight) {
-      lastSeenRight = data.lastRight;
-      addCount();
+    if (adminOpen) {
+      adcInfo.innerHTML = `BOTTOM ADC: ${data.adcLeft} (last hit: ${data.lastAdcLeft}) Thresh: ${data.threshLeft}<br>
+                           TOP ADC: ${data.adcRight} (last hit: ${data.lastAdcRight}) Thresh: ${data.threshRight}`;
+      if (threshLeftInput.value == "" || document.activeElement !== threshLeftInput) threshLeftInput.value = data.threshLeft;
+      if (threshRightInput.value == "" || document.activeElement !== threshRightInput) threshRightInput.value = data.threshRight;
     }
-    if (activeSide === "down" && (data.lastLeft||0) > lastSeenLeft) {
-      lastSeenLeft = data.lastLeft;
-      addCount();
+
+    if (started && !done) {
+      if (activeSide === "up" && (data.lastRight||0) > lastSeenRight) {
+        lastSeenRight = data.lastRight;
+        addCount();
+        if (adminOpen) addLog("TOP HIT ADC=" + data.lastAdcRight);
+      }
+      if (activeSide === "down" && (data.lastLeft||0) > lastSeenLeft) {
+        lastSeenLeft = data.lastLeft;
+        addCount();
+        if (adminOpen) addLog("BOTTOM HIT ADC=" + data.lastAdcLeft);
+      }
     }
   } catch(e) {
     statusEl.textContent = "No ESP";
@@ -307,6 +364,62 @@ refreshBtn.onclick = async () => {
   } catch (e) {}
   const url = location.origin + location.pathname + "?t=" + Date.now();
   location.replace(url);
+};
+
+// Admin unlock: hold both arrows for 5 seconds
+function checkHold() {
+  if (upPressed && downPressed) {
+    if (!holdTimer) {
+      holdTimer = setTimeout(() => {
+        if (upPressed && downPressed) {
+          const pwd = prompt("Admin Password:");
+          if (pwd === "12345678") {
+            adminOpen = true;
+            adminModal.style.display = "flex";
+            hitLog.innerHTML = "";
+            addLog("Admin opened");
+          } else if (pwd !== null) {
+            alert("Wrong password");
+          }
+        }
+        holdTimer = null;
+      }, 5000);
+    }
+  } else {
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+  }
+}
+
+arrowUp.addEventListener("touchstart", (e) => { e.preventDefault(); upPressed = true; checkHold(); }, {passive:false});
+arrowUp.addEventListener("touchend", () => { upPressed = false; checkHold(); });
+arrowUp.addEventListener("mousedown", () => { upPressed = true; checkHold(); });
+arrowUp.addEventListener("mouseup", () => { upPressed = false; checkHold(); });
+arrowUp.addEventListener("mouseleave", () => { upPressed = false; checkHold(); });
+
+arrowDown.addEventListener("touchstart", (e) => { e.preventDefault(); downPressed = true; checkHold(); }, {passive:false});
+arrowDown.addEventListener("touchend", () => { downPressed = false; checkHold(); });
+arrowDown.addEventListener("mousedown", () => { downPressed = true; checkHold(); });
+arrowDown.addEventListener("mouseup", () => { downPressed = false; checkHold(); });
+arrowDown.addEventListener("mouseleave", () => { downPressed = false; checkHold(); });
+
+applyBtn.onclick = async () => {
+  const left = parseInt(threshLeftInput.value) || 800;
+  const right = parseInt(threshRightInput.value) || 800;
+  try {
+    await fetch(`http://${ESP_IP}/set?left=${left}&right=${right}`, {cache:"no-store"});
+    addLog(`Applied: BOTTOM=${left} TOP=${right}`);
+    statusEl.textContent = "Threshold updated";
+  } catch(e) {
+    addLog("Failed to set");
+  }
+};
+
+closeAdmin.onclick = () => {
+  adminOpen = false;
+  adminModal.style.display = "none";
 };
 
 targetEl.textContent = TARGET;
