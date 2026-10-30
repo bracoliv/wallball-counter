@@ -4,12 +4,12 @@
 const char* AP_SSID = "WallBall-1";
 const char* AP_PASS = "12345678";
 
-const int PIN_LEFT  = 34;   // BOTTOM / 女
-const int PIN_RIGHT = 35;   // TOP / 男
+const int PIN_LEFT  = 34;   // 女 / BOTTOM
+const int PIN_RIGHT = 35;   // 男 / TOP
 
-int thresholdLeft  = 800;
-int thresholdRight = 800;
-const unsigned long DEBOUNCE_MS = 400;
+int thresholdLeft  = 700;
+int thresholdRight = 700;
+const unsigned long DEBOUNCE_MS = 800;
 
 WebServer server(80);
 
@@ -60,7 +60,6 @@ void setup() {
   pinMode(PIN_RIGHT, INPUT);
 
   WiFi.softAP(AP_SSID, AP_PASS);
-  Serial.print("AP IP: ");
   Serial.println(WiFi.softAPIP());
 
   server.on("/status", handleStatus);
